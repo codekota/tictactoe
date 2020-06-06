@@ -13,6 +13,7 @@
 		}
 		#game {
 			display: flex;
+			position: relative;
 			flex-wrap: wrap;
 			height: 300px;
   			width: 300px;
@@ -39,8 +40,20 @@
 			background-image: url("img/o.svg");
 		}
 		.red {
-			background-color: #fffafa;
+			background-color: #fffefe;
 			background-blend-mode: color-burn;
+		}
+		#msg {
+			position: absolute;
+			width: 100%;
+			height: 100%;
+			background-color: #ffffffdb;
+			display: flex;
+			justify-content: center;
+  			align-items: center;
+		}
+		.hidden {
+			display: none!important;
 		}
 	</style>
 </head>
@@ -56,6 +69,9 @@
 			<div id="6" class="square"></div>
 			<div id="7" class="square"></div>
 			<div id="8" class="square"></div>
+			<div id="msg" class="hidden">
+				<a href=""><h1>Restart</h1></a>
+			</div>
 		</div>
 	</div>
 
@@ -73,7 +89,7 @@
 		],
 		PLAYERS = {
 			X: "x", 
-			O: "o"
+			O: "o",
 		},
 		MARKED = "red";
 
@@ -82,6 +98,9 @@
 			0, 0, 0,
 			0, 0, 0,
 		],
+		settings = {
+			AI: true,
+		}
 		currentPlayer = PLAYERS.X,
 		winner = null,
 		play = true;
@@ -89,33 +108,41 @@
 		for (var i = SQRS.length - 1; i >= 0; i--) {
 
 			SQRS[i].addEventListener('click', function() {
-				if (play) {
-					playerMove(this);
-				}
+				if (play) playerMove(this);
+				if (play && settings.AI) computerMove();
             });
 		}
 
-		function nextPlayerMove() {
-			switchPlayer();
-			// playerMove(elem);
-			// if (state[r] == 0) {
-			// 	state[r] = 2;
-			// 	setTimeout(() => { 
-			// 		SQRS[r].classList.add("o") 
-			// 	}, 700);
-			// } else {
-			// 	nextPlayerMove(getRandomInt())
-			// }
+		function getAvailableMoves() {
+			let array = []
+			for (var i = state.length - 1; i >= 0; i--) {
+				if (state[i] == 0) array.push(i);
+			}
+			return array
+		}
+
+		function computerMove() {
+			play = false;
+			let availableMoves = getAvailableMoves(),
+			rangomMove = availableMoves[getRandomInt(availableMoves.length)]
+			state[rangomMove] = currentPlayer;
+			setTimeout(() => {
+				play = true;
+				SQRS[rangomMove].classList.add(currentPlayer);
+				switchPlayer();
+				checkWinner();
+			}, 700);
 		}
 
 		function playerMove(elem) {
+			console.log(getAvailableMoves()); // test remove
 			let value = state[elem.id];
 			if (value == 0 ) {
 				elem.classList.add(currentPlayer);
 				state[elem.id] = currentPlayer;
 				switchPlayer();
 			}
-			checkWinner();
+			checkWinner();		
 		}
 
 		function switchPlayer() {
@@ -164,24 +191,25 @@
 			}
 			console.log('Winner:', winner);
 			for (var i = combo.length - 1; i >= 0; i--) {
-				document.getElementById(`${combo[i]}`).classList.add(MARKED)
+				SQRS[combo[i]].classList.add(MARKED)
 			}
-			endGame();
+			gameOver();
 		}
 
 		function tie(){
 			console.log('Tie');
-			endGame();
+			gameOver();
 		}
 
-		function endGame() {
+		function gameOver() {
 			play = false;
-			console.log('Game Ended')
+			console.log('Game Over')
+			document.getElementById("msg").classList.remove('hidden');
 		}
 
-		// function getRandomInt() {
-		//   return Math.floor(Math.random() * Math.floor(9));
-		// }
+		function getRandomInt(max) {
+		  return Math.floor(Math.random() * Math.floor(max));
+		}
 	</script>
 	
 </body>
