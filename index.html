@@ -28,16 +28,9 @@
 			display: flex;
 			justify-content: center;
   			align-items: center;
-		}
-		.x, .o {
 			background-position: center;
 			background-size: contain;
-		}
-		.x {
-			background-image: url("img/x.svg");
-		}
-		.o {
-			background-image: url("img/o.svg");
+			background-repeat: no-repeat;	
 		}
 		.red {
 			background-color: #fffefe;
@@ -55,6 +48,16 @@
 		.hidden {
 			display: none!important;
 		}
+
+		/*.elon-move {
+			background-image: url("img/elon.png");
+		}
+		.elon-lose {
+			background-image: url("img/elon_lose.png");
+		}
+		.elon-win {
+			background-image: url("img/elon_win.png");
+		}*/
 	</style>
 </head>
 <body>
@@ -87,9 +90,23 @@
 			[0, 4, 8],
 			[2, 4, 6]
 		],
-		PLAYERS = {
-			X: "x", 
-			O: "o",
+		HEROES = {
+			ELON: {
+				avatar: 'url("img/elon4.png")',
+				avatarWin: 'url("img/elon2.png")'
+			},
+			IA: {
+				avatar: 'url("img/good_robot.png")',
+				avatarWin: 'url("img/terminator.png")'
+			},
+			PUTIN: {
+				avatar: 'url("img/putin.jpg")',
+				avatarWin: 'url("img/putin_win.jpg")'
+			},
+			TRUMP: {
+				avatar: 'url("img/trump.png")',
+				avatarWin: 'url("img/trump_win.png")'
+			}
 		},
 		MARKED = "red";
 
@@ -100,8 +117,18 @@
 		],
 		settings = {
 			AI: true,
-		}
-		currentPlayer = PLAYERS.X,
+		},
+		players = {
+			x: {
+				value: "x",
+				hero: HEROES.IA
+			}, 
+			o: {
+				value:"o",
+				hero: HEROES.PUTIN
+			}
+		},
+		currentPlayer = players.x,
 		winner = null,
 		play = true;
 
@@ -121,16 +148,45 @@
 			return array
 		}
 
+		function bestMove(availableMoves, initState) {
+			let bestMoves = [];
+			let leftMoves = [];
+
+
+			availableMoves.forEach((el) => {
+				
+				initState[el] = currentPlayer.value;
+				console.log(el);
+				if (isWinner(initState, currentPlayer)) {
+					bestMoves.push(el)
+				} else {
+					leftMoves.push(el);
+					leftMoves.forEach((el) => {
+						
+						initState[el] = currentPlayer.value;
+						console.log(el);
+						if (isWinner(initState, currentPlayer)) {
+							bestMoves.push(el)
+						} else {
+							leftMoves.push(el);
+						}
+					});
+				}
+			});
+			return bestMoves.length? bestMoves[0] : leftMoves[getRandomInt(leftMoves.length)]
+		}
+
 		function computerMove() {
 			play = false;
-			let availableMoves = getAvailableMoves(),
-			rangomMove = availableMoves[getRandomInt(availableMoves.length)]
-			state[rangomMove] = currentPlayer;
+			let initState = state.map(x => x);
+			let move = bestMove(getAvailableMoves(), initState);
+			state[move] = currentPlayer.value;
 			setTimeout(() => {
 				play = true;
-				SQRS[rangomMove].classList.add(currentPlayer);
-				switchPlayer();
+				// SQRS[rangomMove].classList.add(currentPlayer);
+				SQRS[move].style.backgroundImage = currentPlayer.hero.avatar
 				checkWinner();
+				switchPlayer();
 			}, 700);
 		}
 
@@ -138,15 +194,16 @@
 			console.log(getAvailableMoves()); // test remove
 			let value = state[elem.id];
 			if (value == 0 ) {
-				elem.classList.add(currentPlayer);
-				state[elem.id] = currentPlayer;
-				switchPlayer();
+				// elem.classList.add(currentPlayer);
+				elem.style.backgroundImage = currentPlayer.hero.avatar
+				state[elem.id] = currentPlayer.value;
 			}
-			checkWinner();		
+			checkWinner();
+			switchPlayer();
 		}
 
 		function switchPlayer() {
-			currentPlayer = (currentPlayer == PLAYERS.X)? PLAYERS.O : PLAYERS.X
+			currentPlayer = (currentPlayer == players.x)? players.o : players.x
 		}
 
 		function checkWinner() {
@@ -164,16 +221,16 @@
 						case "o":
 							combo.o += 1;
 							break;
-					}
+					};
 					if (combo.x == 3) {
-						won(PLAYERS.X, COMBOS[i]);
+						win(players.x, COMBOS[i]);
 						break;
 					}
 					if (combo.o == 3) {
-						won(PLAYERS.O, COMBOS[i]);
+						win(players.o, COMBOS[i]);
 						break;
 					}
-					if (play && !state.includes(0)) {
+					if ((j < 0) && !state.includes(0)) {
 						tie();
 						break;
 					}
@@ -184,14 +241,33 @@
 			}
 		}
 
-		function won(player, combo) {
+		function isWinner(initState, player) {
+			for (var i = COMBOS.length - 1; i >= 0; i--) {
+				let combo = 0
+
+				for (var j = COMBOS[i].length - 1; j >= 0; j--) {
+					switch (initState[COMBOS[i][j]]) {
+						case player.value:
+							combo += 1;
+							break;
+					};
+					if (combo == 3) return true
+					if ((j < 0) && !initState.includes(0)) {
+						return false
+					}
+				}
+			}
+		}
+
+		function win(player, combo) {
 			winner = { 
 				player: player,
 				combo: combo
 			}
 			console.log('Winner:', winner);
 			for (var i = combo.length - 1; i >= 0; i--) {
-				SQRS[combo[i]].classList.add(MARKED)
+				// SQRS[combo[i]].classList.add(MARKED)
+				SQRS[combo[i]].style.backgroundImage = currentPlayer.hero.avatarWin;
 			}
 			gameOver();
 		}
@@ -204,7 +280,7 @@
 		function gameOver() {
 			play = false;
 			console.log('Game Over')
-			document.getElementById("msg").classList.remove('hidden');
+			// document.getElementById("msg").classList.remove('hidden');
 		}
 
 		function getRandomInt(max) {
